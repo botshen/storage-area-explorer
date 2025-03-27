@@ -31,7 +31,7 @@ export default defineConfig({
     },
   }),
   manifest: ({ browser }) => {
-    const permissions = ["storage"];
+    const permissions = ["storage", "tabs"];
     if (browser === "firefox") {
       permissions.push("https://api.github.com/*");
     }
@@ -40,6 +40,7 @@ export default defineConfig({
       name: "__MSG_name__",
       description: "__MSG_description__",
       permissions,
+      host_permissions: ["<all_urls>"],
     };
   },
   autoIcons: {

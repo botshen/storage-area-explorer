@@ -1,12 +1,23 @@
 <script lang="ts" setup>
-const currentTab = ref("chrome.storage.local");
+import { onMounted, watch, computed } from "vue";
 
-const tabs = [
-  "chrome.storage.local",
-  "chrome.storage.session",
-  "window.localStorage",
-  "window.sessionStorage",
-];
+const currentTab = ref("window.localStorage");
+
+// 添加一个计算属性来过滤 tabs
+const isExtensionPage = ref(false);
+
+const tabs = computed(() => {
+  const allTabs = [
+    "chrome.storage.local",
+    "chrome.storage.session",
+    "window.localStorage",
+    "window.sessionStorage",
+  ];
+
+  return isExtensionPage.value
+    ? allTabs
+    : allTabs.filter((tab) => !tab.startsWith("chrome.storage"));
+});
 
 const switchTab = (tab: string) => {
   currentTab.value = tab;
@@ -40,6 +51,92 @@ const items = ref<StorageItem[]>([
     value: "Tax Accountant",
   },
 ]);
+
+// 添加获取 localStorage 的函数
+const getLocalStorage = () => {
+  chrome.devtools.inspectedWindow.eval(
+    `(function() {
+      const storage = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          storage[key] = localStorage.getItem(key);
+        }
+      }
+      return storage;
+    })()`,
+    (result, isException) => {
+      console.log("result", result);
+      if (isException) {
+        console.error("Error fetching localStorage:", isException);
+        return;
+      }
+
+      // 转换结果为我们需要的格式
+      const storageItems: StorageItem[] = Object.entries(
+        result as Record<string, string>,
+      ).map(([key, value], index) => ({
+        id: index + 1,
+        key,
+        value: value || "",
+      }));
+      console.log("storageItems", storageItems);
+      items.value = storageItems;
+    },
+  );
+};
+
+// 当切换到 localStorage tab 时自动获取数据
+watch(currentTab, (newTab) => {
+  if (newTab === "window.localStorage") {
+    getLocalStorage();
+  }
+});
+
+// 在组件挂载时检查当前页面类型
+onMounted(() => {
+  chrome.devtools.inspectedWindow.eval(
+    `location.protocol`,
+    (result, isException) => {
+      isExtensionPage.value = result === "chrome-extension:";
+      // 如果当前选中的是 chrome.storage 相关标签，且不是扩展页面
+      if (
+        !isExtensionPage.value &&
+        currentTab.value.startsWith("chrome.storage")
+      ) {
+        currentTab.value = "window.localStorage";
+      }
+    },
+  );
+
+  editModal.value = document.getElementById("edit_modal") as HTMLDialogElement;
+});
+
+// 添加编辑相关的状态和方法
+const editingItem = ref<StorageItem>({
+  id: 0,
+  key: "",
+  value: "",
+});
+
+const editModal = ref<HTMLDialogElement | null>(null);
+
+// 添加编辑状态控制
+const isEditing = ref(false);
+
+const openEdit = (item: StorageItem) => {
+  editingItem.value = { ...item };
+  isEditing.value = true;
+};
+
+const cancelEdit = () => {
+  isEditing.value = false;
+};
+
+const saveEdit = () => {
+  // TODO: 实现保存逻辑
+  isEditing.value = false;
+};
 </script>
 
 <template>
@@ -60,6 +157,15 @@ const items = ref<StorageItem[]>([
   <div class="pl-2">
     <div v-if="currentTab === 'chrome.storage.local'">
       <!-- chrome.storage.local 的具体内容 -->
+    </div>
+
+    <div v-else-if="currentTab === 'chrome.storage.session'">
+      <h2 class="text-xl font-bold mb-4">Chrome Storage Session</h2>
+      <!-- chrome.storage.session 的具体内容 -->
+    </div>
+
+    <div v-else-if="currentTab === 'window.localStorage'">
+      <!-- window.localStorage 的具体内容 -->
       <x-action class="flex items-center gap-1">
         <button class="btn btn-xs bg-[#3d7fbf] text-white border-none">
           Add item
@@ -74,9 +180,38 @@ const items = ref<StorageItem[]>([
           Import
         </button>
       </x-action>
-      <table class="table table-zebra table-xs">
+
+      <!-- 编辑界面 -->
+      <div v-if="isEditing" class="mt-4 px-1 pr-4">
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Key</span>
+          </label>
+          <input
+            type="text"
+            class="input input-bordered w-full"
+            v-model="editingItem.key"
+          />
+        </div>
+        <div class="form-control w-full mt-4">
+          <label class="label">
+            <span class="label-text">Value</span>
+          </label>
+          <textarea
+            class="textarea textarea-bordered w-full h-32"
+            v-model="editingItem.value"
+          ></textarea>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-sm" @click="cancelEdit">取消</button>
+          <button class="btn btn-sm btn-primary" @click="saveEdit">保存</button>
+        </div>
+      </div>
+
+      <!-- 表格界面 -->
+      <table v-else class="table table-zebra table-xs">
         <thead>
-          <tr>
+          <tr class="text-xs font-bold text-black">
             <th>Key</th>
             <th>Value</th>
             <th class="w-20">Actions</th>
@@ -85,41 +220,43 @@ const items = ref<StorageItem[]>([
         <tbody>
           <tr v-for="item in items" :key="item.id" class="hover:bg-base-300">
             <td class="font-bold">{{ item.key }}</td>
-            <td class="w-full">{{ item.value }}</td>
+            <td
+              :title="item.value"
+              class="w-full max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap truncate"
+            >
+              {{ item.value }}
+            </td>
             <td class="flex gap-1">
               <button
-                class="btn btn-xs bg-[#3d7fbf] text-white border-none w-6 h-6 min-h-6 p-0"
+                class="btn btn-square btn-xs bg-[#3d7fbf] text-white border-none h-[18px] w-[18px]"
+                @click="openEdit(item)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-4 h-4"
+                  viewBox="0 0 16 16"
+                  class="w-3 h-3"
                 >
                   <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"
+                    fill="currentColor"
+                    d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456l-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"
                   />
                 </svg>
               </button>
               <button
-                class="btn btn-xs bg-[#dc7171] text-white border-none w-6 h-6 min-h-6 p-0"
+                class="btn btn-square btn-xs bg-[#cd5b54] text-white border-none h-[18px] w-[18px]"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-4 h-4"
+                  viewBox="0 0 16 16"
+                  class="w-3 h-3"
                 >
                   <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                    fill="currentColor"
+                    d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"
                   />
                 </svg>
               </button>
@@ -129,19 +266,39 @@ const items = ref<StorageItem[]>([
       </table>
     </div>
 
-    <div v-else-if="currentTab === 'chrome.storage.session'">
-      <h2 class="text-xl font-bold mb-4">Chrome Storage Session</h2>
-      <!-- chrome.storage.session 的具体内容 -->
-    </div>
-
-    <div v-else-if="currentTab === 'window.localStorage'">
-      <h2 class="text-xl font-bold mb-4">Window Local Storage</h2>
-      <!-- window.localStorage 的具体内容 -->
-    </div>
-
     <div v-else-if="currentTab === 'window.sessionStorage'">
       <h2 class="text-xl font-bold mb-4">Window Session Storage</h2>
       <!-- window.sessionStorage 的具体内容 -->
     </div>
   </div>
+
+  <!-- 添加编辑对话框 -->
+  <dialog id="edit_modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">编辑存储项</h3>
+      <div class="form-control w-full">
+        <label class="label">
+          <span class="label-text">Key</span>
+        </label>
+        <input
+          type="text"
+          class="input input-bordered w-full"
+          v-model="editingItem.key"
+        />
+      </div>
+      <div class="form-control w-full mt-4">
+        <label class="label">
+          <span class="label-text">Value</span>
+        </label>
+        <textarea
+          class="textarea textarea-bordered w-full h-32"
+          v-model="editingItem.value"
+        ></textarea>
+      </div>
+      <div class="modal-action">
+        <button class="btn" @click="cancelEdit">取消</button>
+        <button class="btn btn-primary" @click="saveEdit">保存</button>
+      </div>
+    </div>
+  </dialog>
 </template>
