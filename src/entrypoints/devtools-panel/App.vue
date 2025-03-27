@@ -1,5 +1,13 @@
 <script lang="ts" setup>
-import { onMounted, watch, computed } from "vue";
+import { onMounted, watch, computed, onUnmounted } from "vue";
+import { useAppStore, type StorageItem } from "./use-app-store";
+
+const store = useAppStore();
+// 将 store 暴露到全局，这样 main.ts 可以访问
+const app = getCurrentInstance();
+if (app) {
+  app.appContext.app.config.globalProperties.$store = store;
+}
 
 const currentTab = ref("window.localStorage");
 
@@ -22,69 +30,9 @@ const tabs = computed(() => {
 const switchTab = (tab: string) => {
   currentTab.value = tab;
 };
-
-interface StorageItem {
-  id: number;
-  key: string;
-  value: string;
-}
-
-const items = ref<StorageItem[]>([
-  {
-    id: 1,
-    key: "USER_AGENT_BROWSER_MAJOR_VERSION",
-    value: "Quality Control Specialist",
-  },
-  {
-    id: 2,
-    key: "Hart Hagerty",
-    value: "Desktop Support Technician",
-  },
-  {
-    id: 3,
-    key: "Brice Swyre",
-    value: "Tax Accountant",
-  },
-  {
-    id: 4,
-    key: "Brice Swyre",
-    value: "Tax Accountant",
-  },
-]);
+const { items, getLocalStorage } = store;
 
 // 添加获取 localStorage 的函数
-const getLocalStorage = () => {
-  chrome.devtools.inspectedWindow.eval(
-    `(function() {
-      const storage = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          storage[key] = localStorage.getItem(key);
-        }
-      }
-      return storage;
-    })()`,
-    (result, isException) => {
-      console.log("result", result);
-      if (isException) {
-        console.error("Error fetching localStorage:", isException);
-        return;
-      }
-
-      // 转换结果为我们需要的格式
-      const storageItems: StorageItem[] = Object.entries(
-        result as Record<string, string>,
-      ).map(([key, value], index) => ({
-        id: index + 1,
-        key,
-        value: value || "",
-      }));
-      console.log("storageItems", storageItems);
-      items.value = storageItems;
-    },
-  );
-};
 
 // 当切换到 localStorage tab 时自动获取数据
 watch(currentTab, (newTab) => {
@@ -108,8 +56,6 @@ onMounted(() => {
       }
     },
   );
-
-  editModal.value = document.getElementById("edit_modal") as HTMLDialogElement;
 });
 
 // 添加编辑相关的状态和方法
@@ -271,34 +217,4 @@ const saveEdit = () => {
       <!-- window.sessionStorage 的具体内容 -->
     </div>
   </div>
-
-  <!-- 添加编辑对话框 -->
-  <dialog id="edit_modal" class="modal">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">编辑存储项</h3>
-      <div class="form-control w-full">
-        <label class="label">
-          <span class="label-text">Key</span>
-        </label>
-        <input
-          type="text"
-          class="input input-bordered w-full"
-          v-model="editingItem.key"
-        />
-      </div>
-      <div class="form-control w-full mt-4">
-        <label class="label">
-          <span class="label-text">Value</span>
-        </label>
-        <textarea
-          class="textarea textarea-bordered w-full h-32"
-          v-model="editingItem.value"
-        ></textarea>
-      </div>
-      <div class="modal-action">
-        <button class="btn" @click="cancelEdit">取消</button>
-        <button class="btn btn-primary" @click="saveEdit">保存</button>
-      </div>
-    </div>
-  </dialog>
 </template>
