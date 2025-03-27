@@ -1,5 +1,5 @@
-name: GitHub Better Line Counts
-description: Remove generated files from GitHub line counts
+name: Storage Explorer
+description: Explore your browser storage
 saveChanges: Save Changes
 discard: Discard
 diffs:

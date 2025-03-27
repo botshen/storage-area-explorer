@@ -20,6 +20,9 @@ export default defineConfig({
       { from: "@tanstack/vue-query", name: "useMutation" },
     ],
   },
+  runner: {
+    disabled: true,
+  },
   vite: () => ({
     plugins: [Icons({ compiler: "vue3" }), Tailwindcss() as any],
     ssr: {
