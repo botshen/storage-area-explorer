@@ -21,6 +21,7 @@ browser.devtools.panels.create(
       console.log("store", store);
       if (store) {
         store.getLocalStorage();
+        store.getSessionStorage();
       }
     });
   },

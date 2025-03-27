@@ -4,7 +4,8 @@ export interface StorageItem {
   value: string;
 }
 
-const items = ref<StorageItem[]>([]);
+const localStorageItems = ref<StorageItem[]>([]);
+const sessionStorageItems = ref<StorageItem[]>([]);
 
 const getLocalStorage = () => {
   chrome.devtools.inspectedWindow.eval(
@@ -32,7 +33,38 @@ const getLocalStorage = () => {
         value: value || "",
       }));
       console.log("storageItems", storageItems);
-      items.value = storageItems;
+      localStorageItems.value = storageItems;
+    },
+  );
+};
+
+const getSessionStorage = () => {
+  chrome.devtools.inspectedWindow.eval(
+    `(function() {
+      const storage = {};
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key) {
+          storage[key] = sessionStorage.getItem(key);
+        }
+      }
+      return storage;
+    })()`,
+    (result, isException) => {
+      if (isException) {
+        console.error("Error fetching sessionStorage:", isException);
+        return;
+      }
+
+      const storageItems: StorageItem[] = Object.entries(
+        result as Record<string, string>,
+      ).map(([key, value], index) => ({
+        id: index + 1,
+        key,
+        value: value || "",
+      }));
+      console.log("storageItems", storageItems);
+      sessionStorageItems.value = storageItems;
     },
   );
 };
@@ -40,6 +72,8 @@ const getLocalStorage = () => {
 export const useAppStore = () => {
   return {
     getLocalStorage,
-    items,
+    getSessionStorage,
+    localStorageItems,
+    sessionStorageItems,
   };
 };
