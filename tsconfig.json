@@ -1,0 +1,9 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "isolatedModules": true,
+    "types": ["bun", "unplugin-icons/types/vue"],
+    "verbatimModuleSyntax": true
+  }
+}

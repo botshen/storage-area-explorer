@@ -1,0 +1,8 @@
+dist
+dist-*
+artifacts
+coverage
+.wxt
+.output
+coverage
+*.lock
