@@ -1,5 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, watch, computed, onUnmounted } from "vue";
+import {
+  onMounted,
+  watch,
+  computed,
+  onUnmounted,
+  ref,
+  getCurrentInstance,
+} from "vue";
 import { useAppStore, type StorageItem } from "./use-app-store";
 
 const store = useAppStore();
@@ -50,9 +57,36 @@ watch(currentTab, (newTab) => {
   }
 });
 
-// 在组件挂载时检查当前页面类型
+// 后台连接
+let port: chrome.runtime.Port | null = null;
+
+// 启动实时监控
+const startMonitoring = () => {
+  if (!isMonitoring.value) {
+    setupStorageMonitoring();
+  }
+};
+
+// 在组件挂载时设置连接和监控
 onMounted(() => {
   console.log("Component mounted");
+  // 获取当前标签页的ID
+  const tabId = chrome.devtools.inspectedWindow.tabId;
+
+  // 连接到后台脚本
+  port = chrome.runtime.connect({
+    name: `storage-area-explorer-${tabId}`,
+  });
+
+  // 监听后台脚本发送的消息
+  port.onMessage.addListener((message) => {
+    if (message.type === "storageUpdate") {
+      console.log("收到存储更新:", message.data);
+      // 更新会自动通过 store 中的处理函数完成
+    }
+  });
+
+  // 检查当前页面类型
   chrome.devtools.inspectedWindow.eval(
     `location.protocol`,
     (result, isException) => {
@@ -69,6 +103,9 @@ onMounted(() => {
       ) {
         currentTab.value = "window.localStorage";
       }
+
+      // 启动存储监控
+      startMonitoring();
     },
   );
 
@@ -85,6 +122,14 @@ onMounted(() => {
 onUnmounted(() => {
   console.log("Component unmounted");
   stopPolling();
+});
+
+// 组件卸载时断开连接
+onUnmounted(() => {
+  if (port) {
+    port.disconnect();
+    port = null;
+  }
 });
 
 // 添加编辑相关的状态和方法
@@ -109,8 +154,101 @@ const cancelEdit = () => {
 };
 
 const saveEdit = () => {
-  // TODO: 实现保存逻辑
-  isEditing.value = false;
+  // 保存编辑后的值
+  const { key, value } = editingItem.value;
+
+  chrome.devtools.inspectedWindow.eval(
+    `
+    (function() {
+      try {
+        if (${currentTab.value === "window.localStorage"}) {
+          localStorage.setItem('${key}', '${value.replace(/'/g, "\\'")}');
+          return true;
+        } else if (${currentTab.value === "window.sessionStorage"}) {
+          sessionStorage.setItem('${key}', '${value.replace(/'/g, "\\'")}');
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('保存失败:', e);
+        return false;
+      }
+    })()
+    `,
+    (result, isException) => {
+      if (isException || !result) {
+        console.error("保存失败:", isException);
+      } else {
+        // 更新成功 - 监控会自动捕获变更
+        console.log("保存成功");
+      }
+      isEditing.value = false;
+    },
+  );
+};
+
+// 添加删除功能
+const deleteItem = (item: StorageItem) => {
+  const { key } = item;
+
+  chrome.devtools.inspectedWindow.eval(
+    `
+    (function() {
+      try {
+        if (${currentTab.value === "window.localStorage"}) {
+          localStorage.removeItem('${key}');
+          return true;
+        } else if (${currentTab.value === "window.sessionStorage"}) {
+          sessionStorage.removeItem('${key}');
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('删除失败:', e);
+        return false;
+      }
+    })()
+    `,
+    (result, isException) => {
+      if (isException || !result) {
+        console.error("删除失败:", isException);
+      } else {
+        // 删除成功 - 监控会自动捕获变更
+        console.log("删除成功");
+      }
+    },
+  );
+};
+
+// 添加清空功能
+const clearStorage = () => {
+  chrome.devtools.inspectedWindow.eval(
+    `
+    (function() {
+      try {
+        if (${currentTab.value === "window.localStorage"}) {
+          localStorage.clear();
+          return true;
+        } else if (${currentTab.value === "window.sessionStorage"}) {
+          sessionStorage.clear();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('清空失败:', e);
+        return false;
+      }
+    })()
+    `,
+    (result, isException) => {
+      if (isException || !result) {
+        console.error("清空失败:", isException);
+      } else {
+        // 清空成功 - 监控会自动捕获变更
+        console.log("清空成功");
+      }
+    },
+  );
 };
 </script>
 
@@ -145,7 +283,10 @@ const saveEdit = () => {
         <button class="btn btn-xs bg-[#3d7fbf] text-white border-none">
           Add item
         </button>
-        <button class="btn btn-xs bg-[#eca451] text-white border-none">
+        <button
+          class="btn btn-xs bg-[#eca451] text-white border-none"
+          @click="clearStorage"
+        >
           Clear
         </button>
         <button class="btn btn-xs bg-[#71bedc] text-white border-none">
@@ -222,6 +363,7 @@ const saveEdit = () => {
               </button>
               <button
                 class="btn btn-square btn-xs bg-[#cd5b54] text-white border-none h-[18px] w-[18px]"
+                @click="deleteItem(item)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -250,7 +392,10 @@ const saveEdit = () => {
         <button class="btn btn-xs bg-[#3d7fbf] text-white border-none">
           Add item
         </button>
-        <button class="btn btn-xs bg-[#eca451] text-white border-none">
+        <button
+          class="btn btn-xs bg-[#eca451] text-white border-none"
+          @click="clearStorage"
+        >
           Clear
         </button>
         <button class="btn btn-xs bg-[#71bedc] text-white border-none">
@@ -327,6 +472,7 @@ const saveEdit = () => {
               </button>
               <button
                 class="btn btn-square btn-xs bg-[#cd5b54] text-white border-none h-[18px] w-[18px]"
+                @click="deleteItem(item)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
