@@ -35,12 +35,13 @@ const {
   sessionStorageItems,
   getLocalStorage,
   getSessionStorage,
+  startPolling,
+  stopPolling,
 } = store;
-
-// 添加获取 localStorage 的函数
 
 // 当切换到 localStorage tab 时自动获取数据
 watch(currentTab, (newTab) => {
+  console.log("Tab changed to:", newTab);
   if (newTab === "window.localStorage") {
     getLocalStorage();
   }
@@ -51,9 +52,15 @@ watch(currentTab, (newTab) => {
 
 // 在组件挂载时检查当前页面类型
 onMounted(() => {
+  console.log("Component mounted");
   chrome.devtools.inspectedWindow.eval(
     `location.protocol`,
     (result, isException) => {
+      if (isException) {
+        console.error("Error checking protocol:", isException);
+        return;
+      }
+      console.log("Protocol check result:", result);
       isExtensionPage.value = result === "chrome-extension:";
       // 如果当前选中的是 chrome.storage 相关标签，且不是扩展页面
       if (
@@ -64,6 +71,20 @@ onMounted(() => {
       }
     },
   );
+
+  // 初始加载数据
+  console.log("Loading initial data...");
+  getLocalStorage();
+  getSessionStorage();
+
+  // 启动轮询
+  startPolling();
+});
+
+// 在组件卸载时停止轮询
+onUnmounted(() => {
+  console.log("Component unmounted");
+  stopPolling();
 });
 
 // 添加编辑相关的状态和方法
