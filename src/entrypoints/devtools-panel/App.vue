@@ -179,6 +179,7 @@ const deleteItem = (item: StorageItem) => {
 
 // 添加清空功能
 const clearStorage = () => {
+  // 根据当前标签页类型清空对应的存储
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
