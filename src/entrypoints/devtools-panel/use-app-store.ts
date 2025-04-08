@@ -7,14 +7,22 @@ declare global {
   }
 }
 
+// 存储项的类型定义
 export interface StorageItem {
   id: number;
   key: string;
   value: string;
 }
 
+// 存储类型的枚举
+export enum StorageType {
+  LOCAL_STORAGE = "localStorage",
+  SESSION_STORAGE = "sessionStorage",
+}
+
 import { ref } from "vue";
 
+// 存储状态
 const localStorageItems = ref<StorageItem[]>([]);
 const sessionStorageItems = ref<StorageItem[]>([]);
 const isMonitoring = ref<boolean>(false);
@@ -147,12 +155,6 @@ const setupStorageMonitoring = () => {
 
         // 设置内容脚本的消息监听器
         setupContentScriptListener();
-
-        // 启动轮询机制
-        const cleanupPolling = setupPollingForSpecialKeys();
-
-        // 添加清理功能
-        window.__storagePollingCleanup = cleanupPolling;
       }
     },
   );
@@ -197,9 +199,9 @@ const setupContentScriptListener = () => {
     if (message.type === "storageUpdate") {
       const { storageType, key, value } = message.data;
 
-      if (storageType === "localStorage") {
+      if (storageType === StorageType.LOCAL_STORAGE) {
         handleLocalStorageUpdate(key, value);
-      } else if (storageType === "sessionStorage") {
+      } else if (storageType === StorageType.SESSION_STORAGE) {
         handleSessionStorageUpdate(key, value);
       }
     }
@@ -279,6 +281,7 @@ const handleSessionStorageUpdate = (
   }
 };
 
+// 获取 localStorage 数据
 const getLocalStorage = () => {
   console.log("Getting localStorage...");
   chrome.devtools.inspectedWindow.eval(
@@ -316,6 +319,7 @@ const getLocalStorage = () => {
   );
 };
 
+// 获取 sessionStorage 数据
 const getSessionStorage = () => {
   console.log("Getting sessionStorage...");
   chrome.devtools.inspectedWindow.eval(

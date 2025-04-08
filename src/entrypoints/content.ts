@@ -1,3 +1,18 @@
+// 定义消息类型
+interface StorageUpdateMessage {
+  type: "storageUpdate";
+  data: {
+    storageType: string;
+    key: string | null;
+    value: string | null;
+  };
+}
+
+// 定义自定义事件类型
+interface StorageCustomEvent extends CustomEvent {
+  detail: StorageUpdateMessage;
+}
+
 export default defineContentScript({
   matches: ["<all_urls>"],
   runAt: "document_end",
@@ -8,7 +23,7 @@ export default defineContentScript({
     // 监听页面中的自定义事件
     document.addEventListener("__sendToContentScript", (event: Event) => {
       // 转换 event 为自定义事件类型
-      const customEvent = event as CustomEvent;
+      const customEvent = event as StorageCustomEvent;
       if (customEvent.detail) {
         // 发送消息到扩展的后台
         chrome.runtime.sendMessage(customEvent.detail);

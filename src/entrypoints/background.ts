@@ -1,3 +1,13 @@
+// 定义消息类型
+interface StorageUpdateMessage {
+  type: "storageUpdate";
+  data: {
+    storageType: string;
+    key: string | null;
+    value: string | null;
+  };
+}
+
 export default defineBackground(() => {
   // 存储连接到的 devtools 端口
   const devtoolsPorts: Record<string, chrome.runtime.Port> = {};
@@ -20,20 +30,22 @@ export default defineBackground(() => {
   });
 
   // 接收来自内容脚本的消息
-  chrome.runtime.onMessage.addListener((message, sender) => {
-    if (sender.tab && sender.tab.id && message.type === "storageUpdate") {
-      const tabId = String(sender.tab.id);
+  chrome.runtime.onMessage.addListener(
+    (message: StorageUpdateMessage, sender) => {
+      if (sender.tab && sender.tab.id && message.type === "storageUpdate") {
+        const tabId = String(sender.tab.id);
 
-      // 如果有对应的 DevTools 端口，则转发消息
-      if (devtoolsPorts[tabId]) {
-        console.log(`Forwarding storage update to DevTools for tab ${tabId}`);
-        devtoolsPorts[tabId].postMessage(message);
+        // 如果有对应的 DevTools 端口，则转发消息
+        if (devtoolsPorts[tabId]) {
+          console.log(`Forwarding storage update to DevTools for tab ${tabId}`);
+          devtoolsPorts[tabId].postMessage(message);
+        }
       }
-    }
 
-    // 必须返回 true 以保持消息端口打开，以便异步响应
-    return true;
-  });
+      // 必须返回 true 以保持消息端口打开，以便异步响应
+      return true;
+    },
+  );
 
   // 安装监听
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
