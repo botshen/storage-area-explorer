@@ -7,26 +7,20 @@ import {
   ref,
   getCurrentInstance,
 } from "vue";
-import { useAppStore, type StorageItem, StorageType } from "./use-app-store";
+import { useAppStore, type StorageItem } from "./use-app-store";
 
-// 组件状态
 const store = useAppStore();
-const currentTab = ref("window.localStorage");
-const isExtensionPage = ref(false);
-const editingItem = ref<StorageItem>({
-  id: 0,
-  key: "",
-  value: "",
-});
-const isEditing = ref(false);
-
 // 将 store 暴露到全局，这样 main.ts 可以访问
 const app = getCurrentInstance();
 if (app) {
   app.appContext.app.config.globalProperties.$store = store;
 }
 
-// 计算属性：根据页面类型过滤可用的标签页
+const currentTab = ref("window.localStorage");
+
+// 添加一个计算属性来过滤 tabs
+const isExtensionPage = ref(false);
+
 const tabs = computed(() => {
   const allTabs = [
     "chrome.storage.local",
@@ -40,12 +34,9 @@ const tabs = computed(() => {
     : allTabs.filter((tab) => !tab.startsWith("chrome.storage"));
 });
 
-// 切换标签页
 const switchTab = (tab: string) => {
   currentTab.value = tab;
 };
-
-// 从 store 中解构需要的状态和方法
 const {
   localStorageItems,
   sessionStorageItems,
@@ -55,7 +46,7 @@ const {
   stopPolling,
 } = store;
 
-// 监听标签页变化，自动获取对应存储的数据
+// 当切换到 localStorage tab 时自动获取数据
 watch(currentTab, (newTab) => {
   console.log("Tab changed to:", newTab);
   if (newTab === "window.localStorage") {
@@ -66,28 +57,8 @@ watch(currentTab, (newTab) => {
   }
 });
 
-// 后台连接
-let port: chrome.runtime.Port | null = null;
-
 // 在组件挂载时设置连接和监控
 onMounted(() => {
-  console.log("Component mounted");
-  // 获取当前标签页的ID
-  const tabId = chrome.devtools.inspectedWindow.tabId;
-
-  // 连接到后台脚本
-  port = chrome.runtime.connect({
-    name: `storage-area-explorer-${tabId}`,
-  });
-
-  // 监听后台脚本发送的消息
-  port.onMessage.addListener((message) => {
-    if (message.type === "storageUpdate") {
-      console.log("收到存储更新:", message.data);
-      // 更新会自动通过 store 中的处理函数完成
-    }
-  });
-
   // 检查当前页面类型
   chrome.devtools.inspectedWindow.eval(
     `location.protocol`,
@@ -108,8 +79,6 @@ onMounted(() => {
     },
   );
 
-  // 初始加载数据
-  console.log("Loading initial data...");
   getLocalStorage();
   getSessionStorage();
 
@@ -117,17 +86,21 @@ onMounted(() => {
   startPolling();
 });
 
-// 在组件卸载时停止轮询和断开连接
+// 在组件卸载时停止轮询
 onUnmounted(() => {
-  console.log("Component unmounted");
   stopPolling();
-  if (port) {
-    port.disconnect();
-    port = null;
-  }
 });
 
-// 编辑相关的方法
+// 添加编辑相关的状态和方法
+const editingItem = ref<StorageItem>({
+  id: 0,
+  key: "",
+  value: "",
+});
+
+// 添加编辑状态控制
+const isEditing = ref(false);
+
 const openEdit = (item: StorageItem) => {
   editingItem.value = { ...item };
   isEditing.value = true;
@@ -171,7 +144,7 @@ const saveEdit = () => {
   );
 };
 
-// 删除存储项
+// 添加删除功能
 const deleteItem = (item: StorageItem) => {
   const { key } = item;
 
@@ -204,7 +177,7 @@ const deleteItem = (item: StorageItem) => {
   );
 };
 
-// 清空存储
+// 添加清空功能
 const clearStorage = () => {
   chrome.devtools.inspectedWindow.eval(
     `
@@ -262,7 +235,7 @@ const clearStorage = () => {
     </div>
 
     <div v-else-if="currentTab === 'window.localStorage'">
-      <!-- 操作按钮区域 -->
+      <!-- window.localStorage 的具体内容 -->
       <x-action class="flex items-center gap-1">
         <button class="btn btn-xs bg-[#3d7fbf] text-white border-none">
           Add item
@@ -280,7 +253,6 @@ const clearStorage = () => {
           Import
         </button>
       </x-action>
-
       <!-- 编辑界面 -->
       <div v-if="isEditing" class="mt-4 px-1 pr-4">
         <div class="form-control w-full">
@@ -372,7 +344,7 @@ const clearStorage = () => {
     </div>
 
     <div v-else-if="currentTab === 'window.sessionStorage'">
-      <!-- 操作按钮区域 -->
+      <!-- window.sessionStorage 的具体内容 -->
       <x-action class="flex items-center gap-1">
         <button class="btn btn-xs bg-[#3d7fbf] text-white border-none">
           Add item
@@ -390,7 +362,6 @@ const clearStorage = () => {
           Import
         </button>
       </x-action>
-
       <!-- 编辑界面 -->
       <div v-if="isEditing" class="mt-4 px-1 pr-4">
         <div class="form-control w-full">
