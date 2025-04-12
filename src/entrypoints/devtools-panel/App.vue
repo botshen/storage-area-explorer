@@ -12,9 +12,9 @@ import StorageActions from "../../components/StorageActions.vue";
 import StorageTable from "../../components/StorageTable.vue";
 import StorageEditForm from "../../components/StorageEditForm.vue";
 import StorageAddForm from "../../components/StorageAddForm.vue";
-import { sendMessage } from "@/utils/messaging";
 import { InjectionService } from "@/utils/injection";
 import { storageHookScript } from "@/utils/storage-hook";
+import { onMessage } from "@/utils/messaging";
 
 const store = useAppStore();
 // 将 store 暴露到全局，这样 main.ts 可以访问
@@ -295,6 +295,10 @@ const getChromeLocalStorage = async () => {
     alert("获取chrome.storage.local失败，请查看控制台了解详情");
   }
 };
+
+onMessage("sendToDevPanel", (data) => {
+  console.log("收到数据:", data.data.detail);
+});
 </script>
 
 <template>
