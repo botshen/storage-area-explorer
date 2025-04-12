@@ -28,7 +28,6 @@ const sessionStorageItems = ref<StorageItem[]>([]);
 
 // 获取 localStorage 数据
 const getLocalStorage = () => {
-  console.log("Getting localStorage...");
   chrome.devtools.inspectedWindow.eval(
     `(function() {
       try {
@@ -58,7 +57,6 @@ const getLocalStorage = () => {
         key,
         value: value || "",
       }));
-      console.log("localStorage items:", storageItems);
       localStorageItems.value = storageItems;
     },
   );
@@ -66,7 +64,6 @@ const getLocalStorage = () => {
 
 // 获取 sessionStorage 数据
 const getSessionStorage = () => {
-  console.log("Getting sessionStorage...");
   chrome.devtools.inspectedWindow.eval(
     `(function() {
       try {
@@ -96,7 +93,6 @@ const getSessionStorage = () => {
         key,
         value: value || "",
       }));
-      console.log("sessionStorage items:", storageItems);
       sessionStorageItems.value = storageItems;
     },
   );
@@ -106,7 +102,6 @@ let pollIntervalId: number | null = null;
 
 // 设置轮询来检测变化
 const startPolling = () => {
-  console.log("Starting polling...");
   // 清除之前的轮询
   if (pollIntervalId !== null) {
     clearInterval(pollIntervalId);
@@ -114,15 +109,13 @@ const startPolling = () => {
 
   // 每500毫秒轮询一次
   pollIntervalId = setInterval(() => {
-    console.log("Polling...");
     getLocalStorage();
     getSessionStorage();
-  }, 500) as unknown as number;
+  }, 2000) as unknown as number;
 };
 
 // 停止轮询
 const stopPolling = () => {
-  console.log("Stopping polling...");
   if (pollIntervalId !== null) {
     clearInterval(pollIntervalId);
     pollIntervalId = null;

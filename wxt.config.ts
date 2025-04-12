@@ -32,15 +32,13 @@ export default defineConfig({
   }),
   manifest: ({ browser }) => {
     const permissions = ["storage", "tabs"];
-    if (browser === "firefox") {
-      permissions.push("https://api.github.com/*");
-    }
+
     return {
       default_locale: "en",
       name: "__MSG_name__",
       description: "__MSG_description__",
       permissions,
-      host_permissions: ["<all_urls>"],
+      host_permissions: ["<all_urls>", "chrome-extension://*/*"],
     };
   },
   autoIcons: {

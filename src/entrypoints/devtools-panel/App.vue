@@ -12,6 +12,9 @@ import StorageActions from "../../components/StorageActions.vue";
 import StorageTable from "../../components/StorageTable.vue";
 import StorageEditForm from "../../components/StorageEditForm.vue";
 import StorageAddForm from "../../components/StorageAddForm.vue";
+import { sendMessage } from "@/utils/messaging";
+import { InjectionService } from "@/utils/injection";
+import { storageHookScript } from "@/utils/storage-hook";
 
 const store = useAppStore();
 // 将 store 暴露到全局，这样 main.ts 可以访问
@@ -52,7 +55,6 @@ const {
 
 // 当切换到 localStorage tab 时自动获取数据
 watch(currentTab, (newTab) => {
-  console.log("Tab changed to:", newTab);
   if (newTab === "window.localStorage") {
     getLocalStorage();
   }
@@ -71,23 +73,22 @@ onMounted(() => {
         console.error("Error checking protocol:", isException);
         return;
       }
-      console.log("Protocol check result:", result);
+
       isExtensionPage.value = result === "chrome-extension:";
       // 如果当前选中的是 chrome.storage 相关标签，且不是扩展页面
-      if (
-        !isExtensionPage.value &&
-        currentTab.value.startsWith("chrome.storage")
-      ) {
+      if (isExtensionPage.value) {
+        currentTab.value = "chrome.storage.local";
+      } else {
         currentTab.value = "window.localStorage";
       }
     },
   );
 
-  getLocalStorage();
-  getSessionStorage();
+  // getLocalStorage();
+  // getSessionStorage();
 
-  // 启动轮询
-  startPolling();
+  // // 启动轮询
+  // startPolling();
 });
 
 // 在组件卸载时停止轮询
@@ -140,8 +141,6 @@ const saveEdit = () => {
       if (isException || !result) {
         console.error("保存失败:", isException);
       } else {
-        // 更新成功 - 监控会自动捕获变更
-        console.log("保存成功");
       }
       isEditing.value = false;
     },
@@ -174,7 +173,6 @@ const deleteItem = (item: StorageItem) => {
         console.error("删除失败:", isException);
       } else {
         // 删除成功 - 监控会自动捕获变更
-        console.log("删除成功");
       }
     },
   );
@@ -206,7 +204,6 @@ const clearStorage = () => {
         console.error("清空失败:", isException);
       } else {
         // 清空成功 - 监控会自动捕获变更
-        console.log("清空成功");
       }
     },
   );
@@ -248,11 +245,17 @@ const saveNewItem = (item: StorageItem) => {
         console.error("保存失败:", isException);
       } else {
         // 保存成功 - 监控会自动捕获变更
-        console.log("保存成功");
         isAdding.value = false;
       }
     },
   );
+};
+
+const getChromeLocalStorage = async () => {
+  const injectionService = new InjectionService();
+  await injectionService.evalInInspectedWindow(storageHookScript.toString(), {
+    EXTENSION_ID: chrome.runtime.id,
+  });
 };
 </script>
 
@@ -274,6 +277,7 @@ const saveNewItem = (item: StorageItem) => {
     <div class="pl-2 flex-1">
       <div v-if="currentTab === 'chrome.storage.local'">
         <!-- chrome.storage.local 的具体内容 -->
+        <button @click="getChromeLocalStorage">获取chrome.storage.local</button>
       </div>
 
       <div v-else-if="currentTab === 'chrome.storage.session'">

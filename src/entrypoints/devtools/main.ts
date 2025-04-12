@@ -13,12 +13,10 @@ browser.devtools.panels.create(
   "icon/128.png",
   "devtools-panel.html",
   (extensionPanel) => {
-    console.log("devtools-panel.html");
     extensionPanel.onShown.addListener(function (panelWindow) {
       const app = (panelWindow.document.querySelector("#app") as VueElement)
         ?.__vue_app__;
       const store = app?.config?.globalProperties.$store;
-      console.log("store", store);
       if (store) {
         store.getLocalStorage();
         store.getSessionStorage();
