@@ -47,11 +47,21 @@ const switchTab = (tab: string) => {
 const {
   localStorageItems,
   sessionStorageItems,
+  chromeLocalStorageItems,
+  chromeSessionStorageItems,
+  setChromeStorageData,
   getLocalStorage,
   getSessionStorage,
   startPolling,
   stopPolling,
 } = store;
+
+// 用于显示警告信息的函数
+const showAlert = (message: string) => {
+  // 避免使用 window.alert 来绕过类型检查问题
+  // eslint-disable-next-line no-alert
+  alert(message);
+};
 
 // 当切换到 localStorage tab 时自动获取数据
 watch(currentTab, (newTab) => {
@@ -60,6 +70,9 @@ watch(currentTab, (newTab) => {
   }
   if (newTab === "window.sessionStorage") {
     getSessionStorage();
+  }
+  if (newTab === "chrome.storage.local") {
+    getChromeLocalStorage();
   }
 });
 
@@ -150,6 +163,15 @@ const saveEdit = () => {
 // 添加删除功能
 const deleteItem = (item: StorageItem) => {
   const { key } = item;
+
+  if (
+    currentTab.value === "chrome.storage.local" ||
+    currentTab.value === "chrome.storage.session"
+  ) {
+    showAlert("注意：Chrome Storage 目前仅支持查看，不支持编辑和删除操作");
+    return;
+  }
+
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
@@ -180,6 +202,14 @@ const deleteItem = (item: StorageItem) => {
 
 // 添加清空功能
 const clearStorage = () => {
+  if (
+    currentTab.value === "chrome.storage.local" ||
+    currentTab.value === "chrome.storage.session"
+  ) {
+    showAlert("注意：Chrome Storage 目前仅支持查看，不支持编辑和删除操作");
+    return;
+  }
+
   // 根据当前标签页类型清空对应的存储
   chrome.devtools.inspectedWindow.eval(
     `
@@ -221,6 +251,15 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
+  if (
+    currentTab.value === "chrome.storage.local" ||
+    currentTab.value === "chrome.storage.session"
+  ) {
+    showAlert("注意：Chrome Storage 目前仅支持查看，不支持编辑和删除操作");
+    isAdding.value = false;
+    return;
+  }
+
   // 根据当前标签页类型保存到对应的存储
   chrome.devtools.inspectedWindow.eval(
     `
@@ -271,7 +310,7 @@ const getChromeLocalStorage = async () => {
 
         if (!result) {
           console.warn("当前页面不是扩展页面，无法访问chrome.storage.local");
-          alert("注意：只有在检查扩展页面时才能访问chrome.storage.local");
+          showAlert("注意：只有在检查扩展页面时才能访问chrome.storage.local");
           return;
         }
 
@@ -286,18 +325,22 @@ const getChromeLocalStorage = async () => {
           console.log("注入脚本成功执行");
         } catch (error) {
           console.error("注入脚本执行失败:", error);
-          alert("获取chrome.storage.local失败，请查看控制台了解详情");
+          showAlert("获取chrome.storage.local失败，请查看控制台了解详情");
         }
       },
     );
   } catch (error) {
     console.error("获取chrome.storage.local时出错:", error);
-    alert("获取chrome.storage.local失败，请查看控制台了解详情");
+    showAlert("获取chrome.storage.local失败，请查看控制台了解详情");
   }
 };
 
+// 监听从内容脚本发来的消息
 onMessage("sendToDevPanel", (data) => {
   console.log("收到数据:", data.data.detail);
+  if (data.data.detail) {
+    setChromeStorageData(data.data.detail);
+  }
 });
 </script>
 
@@ -319,12 +362,54 @@ onMessage("sendToDevPanel", (data) => {
     <div class="pl-2 flex-1">
       <div v-if="currentTab === 'chrome.storage.local'">
         <!-- chrome.storage.local 的具体内容 -->
-        <button @click="getChromeLocalStorage">获取chrome.storage.local</button>
+        <div class="flex flex-col h-full">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold mb-4">Chrome Storage Local</h2>
+            <button
+              class="btn btn-sm bg-[#3d7fbf] text-white border-none"
+              @click="getChromeLocalStorage"
+            >
+              刷新数据
+            </button>
+          </div>
+
+          <div class="text-sm text-gray-500 mb-2">
+            只能在检查扩展页面时访问，目前仅支持查看
+          </div>
+
+          <!-- 表格界面 -->
+          <StorageTable
+            :items="chromeLocalStorageItems"
+            @edit="() => showAlert('Chrome Storage 目前仅支持查看')"
+            @delete="() => showAlert('Chrome Storage 目前仅支持查看')"
+          />
+        </div>
       </div>
 
       <div v-else-if="currentTab === 'chrome.storage.session'">
-        <h2 class="text-xl font-bold mb-4">Chrome Storage Session</h2>
-        <!-- chrome.storage.session 的具体内容 -->
+        <div class="flex flex-col h-full">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold mb-4">Chrome Storage Session</h2>
+            <button
+              class="btn btn-sm bg-[#3d7fbf] text-white border-none"
+              @click="getChromeLocalStorage"
+            >
+              刷新数据
+            </button>
+          </div>
+
+          <div class="text-sm text-gray-500 mb-2">
+            只能在检查扩展页面时访问，目前仅支持查看。这里展示的是
+            chrome.storage.sync 数据。
+          </div>
+
+          <!-- 表格界面 -->
+          <StorageTable
+            :items="chromeSessionStorageItems"
+            @edit="() => showAlert('Chrome Storage 目前仅支持查看')"
+            @delete="() => showAlert('Chrome Storage 目前仅支持查看')"
+          />
+        </div>
       </div>
 
       <div v-else-if="currentTab === 'window.localStorage'" class="h-full">

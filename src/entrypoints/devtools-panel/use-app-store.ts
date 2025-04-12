@@ -18,6 +18,8 @@ export interface StorageItem {
 export enum StorageType {
   LOCAL_STORAGE = "localStorage",
   SESSION_STORAGE = "sessionStorage",
+  CHROME_LOCAL = "chrome.storage.local",
+  CHROME_SESSION = "chrome.storage.session",
 }
 
 import { ref } from "vue";
@@ -25,6 +27,8 @@ import { ref } from "vue";
 // 存储状态
 const localStorageItems = ref<StorageItem[]>([]);
 const sessionStorageItems = ref<StorageItem[]>([]);
+const chromeLocalStorageItems = ref<StorageItem[]>([]);
+const chromeSessionStorageItems = ref<StorageItem[]>([]);
 
 // 获取 localStorage 数据
 const getLocalStorage = () => {
@@ -98,6 +102,41 @@ const getSessionStorage = () => {
   );
 };
 
+// 设置 Chrome Storage 数据
+const setChromeStorageData = (data: any) => {
+  if (!data) return;
+
+  // 处理 chrome.storage.local 数据
+  if (data.local) {
+    const storageItems: StorageItem[] = Object.entries(data.local).map(
+      ([key, value], index) => ({
+        id: index + 1,
+        key,
+        value:
+          typeof value === "object"
+            ? JSON.stringify(value, null, 2)
+            : String(value),
+      }),
+    );
+    chromeLocalStorageItems.value = storageItems;
+  }
+
+  // 处理 chrome.storage.session 数据
+  if (data.sync) {
+    const storageItems: StorageItem[] = Object.entries(data.sync).map(
+      ([key, value], index) => ({
+        id: index + 1,
+        key,
+        value:
+          typeof value === "object"
+            ? JSON.stringify(value, null, 2)
+            : String(value),
+      }),
+    );
+    chromeSessionStorageItems.value = storageItems;
+  }
+};
+
 let pollIntervalId: number | null = null;
 
 // 设置轮询来检测变化
@@ -128,6 +167,9 @@ export const useAppStore = () => {
     getSessionStorage,
     localStorageItems,
     sessionStorageItems,
+    chromeLocalStorageItems,
+    chromeSessionStorageItems,
+    setChromeStorageData,
     startPolling,
     stopPolling,
   };
