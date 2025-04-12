@@ -11,31 +11,8 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
     // 使用一个明确的占位符变量，这将被injection服务替换
     // @ts-ignore
     const extensionId = EXTENSION_ID_PLACEHOLDER;
-    console.log("发送数据到静态页", {
-      type: "storage-data",
-      area: "local",
-      data: {},
-    });
 
-    let port: chrome.runtime.Port | undefined;
     try {
-      port = chrome.runtime.connect(extensionId, {
-        name: "inspected-storage-connection",
-      });
-
-      console.log("连接成功建立到扩展:", extensionId);
-
-      // 监听连接错误
-      port.onDisconnect.addListener(() => {
-        console.error("连接已断开", chrome.runtime.lastError);
-      });
-
-      // 监听来自背景页的消息
-      port.onMessage.addListener((message) => {
-        // 处理来自背景页的消息
-        console.log("收到来自背景页的消息:", message);
-      });
-
       // 获取存储数据并发送到背景页
       if (chrome.storage) {
         try {
@@ -44,18 +21,19 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
               console.error("获取存储数据失败:", chrome.runtime.lastError);
               return;
             }
-
+            console.log("items", items);
             try {
-              if (port) {
-                port.postMessage({
+              chrome.runtime.sendMessage(
+                extensionId,
+                {
                   type: "storage-data",
                   area: "local",
                   data: items || {},
-                });
-                console.log("已发送存储数据到背景页");
-              } else {
-                console.error("Port已不可用，无法发送数据");
-              }
+                },
+                (message) => {
+                  console.log("bg返回的数据", message);
+                },
+              );
             } catch (error) {
               console.error("发送数据到背景页失败:", error);
             }
