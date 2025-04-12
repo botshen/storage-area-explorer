@@ -364,17 +364,12 @@ onMessage("sendToDevPanel", (data) => {
         <!-- chrome.storage.local 的具体内容 -->
         <div class="flex flex-col h-full">
           <div class="flex justify-between items-center">
-            <h2 class="text-xl font-bold mb-4">Chrome Storage Local</h2>
             <button
               class="btn btn-sm bg-[#3d7fbf] text-white border-none"
               @click="getChromeLocalStorage"
             >
               刷新数据
             </button>
-          </div>
-
-          <div class="text-sm text-gray-500 mb-2">
-            只能在检查扩展页面时访问，目前仅支持查看
           </div>
 
           <!-- 表格界面 -->
@@ -389,18 +384,12 @@ onMessage("sendToDevPanel", (data) => {
       <div v-else-if="currentTab === 'chrome.storage.session'">
         <div class="flex flex-col h-full">
           <div class="flex justify-between items-center">
-            <h2 class="text-xl font-bold mb-4">Chrome Storage Session</h2>
             <button
               class="btn btn-sm bg-[#3d7fbf] text-white border-none"
               @click="getChromeLocalStorage"
             >
               刷新数据
             </button>
-          </div>
-
-          <div class="text-sm text-gray-500 mb-2">
-            只能在检查扩展页面时访问，目前仅支持查看。这里展示的是
-            chrome.storage.sync 数据。
           </div>
 
           <!-- 表格界面 -->
