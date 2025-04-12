@@ -3,61 +3,32 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
   const storages: Record<string, any> = {};
 
   try {
-    if (chrome.storage) {
-      // 连接到扩展
-      console.log("连接到扩展", chrome.runtime.id);
+    if (!chrome || !chrome.storage || !chrome.runtime) {
+      console.error("Chrome API not available or missing required permissions");
+      return;
+    }
 
-      // const port = chrome.runtime.connect(chrome.runtime.id, {
-      //   name: 'storage-connection'
-      // });
+    // 使用一个明确的占位符变量，这将被injection服务替换
+    // @ts-ignore
+    const extensionId = EXTENSION_ID_PLACEHOLDER;
+    console.log("发送数据到静态页", {
+      type: "storage-data",
+      area: "local",
+      data: {},
+    });
 
-      // // 监听存储变化
-      // const storageListener = (changes: any, areaName: string) => {
-      //   port.postMessage({
-      //     type: 'storage-change',
-      //     changes,
-      //     area: areaName
-      //   });
-      // };
-
-      // // 添加存储监听器
-      // chrome.storage.onChanged.addListener(storageListener);
-
-      // // 获取存储引用
-      // storages.local = chrome.storage.local;
-      // storages.sync = chrome.storage.sync;
-      // storages.managed = chrome.storage.managed;
-      // console.log('storages.local',await storages.local.getKeys())
-      // // 清理函数
-      // port.onDisconnect.addListener(() => {
-      //   chrome.storage.onChanged.removeListener(storageListener);
-      // });
-
-      const port = chrome.runtime.connect(chrome.runtime.id, {
+    let port: chrome.runtime.Port | undefined;
+    try {
+      port = chrome.runtime.connect(extensionId, {
         name: "inspected-storage-connection",
       });
-      port.postMessage("xxxxxx");
 
-      // 处理操作请求
-      //  port.onMessage.addListener((message) => {
-      //   const { area, method, args = [] } = message;
-      //   const storage = storages[area];
+      console.log("连接成功建立到扩展:", extensionId);
 
-      //   if (storage && storage[method]) {
-      //     storage[method](...args, (result: any) => {
-      //       port.postMessage({
-      //         type: 'operation-result',
-      //         result,
-      //         messageId: message.id
-      //       });
-      //     });
-      //   }
-      // });
-      // 发送数据到背景页
-      function sendDataToBackground(data: any) {
-        console.log("发送数据到背景页", data);
-        port.postMessage(data);
-      }
+      // 监听连接错误
+      port.onDisconnect.addListener(() => {
+        console.error("连接已断开", chrome.runtime.lastError);
+      });
 
       // 监听来自背景页的消息
       port.onMessage.addListener((message) => {
@@ -67,16 +38,36 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
 
       // 获取存储数据并发送到背景页
       if (chrome.storage) {
-        chrome.storage.local.get(null, (items) => {
-          sendDataToBackground({
-            type: "storage-data",
-            area: "local",
-            data: items,
+        try {
+          chrome.storage.local.get(null, (items) => {
+            if (chrome.runtime.lastError) {
+              console.error("获取存储数据失败:", chrome.runtime.lastError);
+              return;
+            }
+
+            try {
+              if (port) {
+                port.postMessage({
+                  type: "storage-data",
+                  area: "local",
+                  data: items || {},
+                });
+                console.log("已发送存储数据到背景页");
+              } else {
+                console.error("Port已不可用，无法发送数据");
+              }
+            } catch (error) {
+              console.error("发送数据到背景页失败:", error);
+            }
           });
-        });
+        } catch (storageError) {
+          console.error("访问chrome.storage.local失败:", storageError);
+        }
       }
+    } catch (connectError) {
+      console.error("无法连接到扩展:", connectError, chrome.runtime.lastError);
     }
   } catch (e) {
-    console.error("Failed to initialize storage hook:", e);
+    console.error("初始化存储钩子失败:", e);
   }
 };

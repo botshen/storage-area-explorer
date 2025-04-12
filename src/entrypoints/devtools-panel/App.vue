@@ -252,10 +252,48 @@ const saveNewItem = (item: StorageItem) => {
 };
 
 const getChromeLocalStorage = async () => {
-  const injectionService = new InjectionService();
-  await injectionService.evalInInspectedWindow(storageHookScript.toString(), {
-    EXTENSION_ID: chrome.runtime.id,
-  });
+  try {
+    // 获取扩展的URL
+    const extensionURL = chrome.runtime.getURL("");
+    // URL格式为: chrome-extension://<extensionId>/
+    const extensionId = extensionURL.split("/")[2];
+
+    console.log("Extension ID:", extensionId);
+
+    // 检查当前页面是否是扩展页面
+    chrome.devtools.inspectedWindow.eval(
+      `location.protocol === 'chrome-extension:'`,
+      async (result, isException) => {
+        if (isException) {
+          console.error("检查页面类型时出错:", isException);
+          return;
+        }
+
+        if (!result) {
+          console.warn("当前页面不是扩展页面，无法访问chrome.storage.local");
+          alert("注意：只有在检查扩展页面时才能访问chrome.storage.local");
+          return;
+        }
+
+        try {
+          const injectionService = new InjectionService();
+          await injectionService.evalInInspectedWindow(
+            storageHookScript.toString(),
+            {
+              EXTENSION_ID_PLACEHOLDER: `'${extensionId}'`,
+            },
+          );
+          console.log("注入脚本成功执行");
+        } catch (error) {
+          console.error("注入脚本执行失败:", error);
+          alert("获取chrome.storage.local失败，请查看控制台了解详情");
+        }
+      },
+    );
+  } catch (error) {
+    console.error("获取chrome.storage.local时出错:", error);
+    alert("获取chrome.storage.local失败，请查看控制台了解详情");
+  }
 };
 </script>
 
