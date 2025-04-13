@@ -32,16 +32,16 @@ const cancelEdit = () => {
 
 const saveEdit = () => {
   // 调用保存chrome存储的方法
-  doChromeStorage("setSessionStorage", editingItem.value);
+  doChromeStorage("setSyncStorage", editingItem.value);
   isEditing.value = false;
 };
 
 const handleDelete = (item: StorageItem) => {
-  doChromeStorage("removeSessionStorage", { key: item.key });
+  doChromeStorage("removeSyncStorage", { key: item.key });
 };
 
 const clearStorage = () => {
-  doChromeStorage("clearSessionStorage");
+  doChromeStorage("clearSyncStorage");
 };
 
 const addItem = () => {
@@ -53,7 +53,7 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
-  doChromeStorage("setSessionStorage", item);
+  doChromeStorage("setSyncStorage", item);
   isAdding.value = false;
 };
 </script>

@@ -16,7 +16,7 @@ import { doChromeStorage } from "@/utils/chrome-storage";
 import LocalStoragePage from "./pages/window.localStorage.vue";
 import SessionStoragePage from "./pages/window.sessionStorage.vue";
 import ChromeLocalStoragePage from "./pages/chrome.storage.local.vue";
-import ChromeSessionStoragePage from "./pages/chrome.storage.session.vue";
+import ChromeSyncStoragePage from "./pages/chrome.storage.sync.vue";
 
 const store = useAppStore();
 // 将 store 暴露到全局，这样 main.ts 可以访问
@@ -33,7 +33,7 @@ const isExtensionPage = ref(false);
 const tabs = computed(() => {
   const allTabs = [
     "chrome.storage.local",
-    "chrome.storage.session",
+    "chrome.storage.sync",
     "window.localStorage",
     "window.sessionStorage",
   ];
@@ -48,7 +48,7 @@ const tabComponents: Record<string, Component> = {
   "window.localStorage": LocalStoragePage,
   "window.sessionStorage": SessionStoragePage,
   "chrome.storage.local": ChromeLocalStoragePage,
-  "chrome.storage.session": ChromeSessionStoragePage,
+  "chrome.storage.sync": ChromeSyncStoragePage,
 };
 
 const switchTab = (tab: string) => {
@@ -74,8 +74,8 @@ watch(currentTab, (newTab) => {
   if (newTab === "chrome.storage.local") {
     doChromeStorage("getLocalStorage");
   }
-  if (newTab === "chrome.storage.session") {
-    doChromeStorage("getSessionStorage");
+  if (newTab === "chrome.storage.sync") {
+    doChromeStorage("getSyncStorage");
   }
 });
 
