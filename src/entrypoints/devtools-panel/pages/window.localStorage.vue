@@ -162,6 +162,7 @@ const saveNewItem = (item: StorageItem) => {
       :items="localStorageItems"
       @edit="openEdit"
       @delete="deleteItem"
+      storage-type="window"
     />
   </div>
 </template>

@@ -79,6 +79,7 @@ const saveNewItem = (item: StorageItem) => {
       :items="chromeSessionStorageItems"
       @edit="handleEdit"
       @delete="handleDelete"
+      storage-type="chrome"
     />
   </div>
 </template>

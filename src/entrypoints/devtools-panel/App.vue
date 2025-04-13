@@ -117,7 +117,7 @@ onMessage("sendToDevPanel", (data) => {
 
 <template>
   <div class="h-full flex flex-col">
-    <div role="tablist" class="tabs tabs-box m-2">
+    <div role="tablist" class="tabs tabs-sm tabs-box m-2">
       <a
         v-for="tab in tabs"
         :key="tab"

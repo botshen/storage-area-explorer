@@ -3,6 +3,7 @@ import type { StorageItem } from "../entrypoints/devtools-panel/use-app-store";
 
 defineProps<{
   items: StorageItem[];
+  storageType: "window" | "chrome";
 }>();
 
 const emit = defineEmits<{
@@ -32,24 +33,32 @@ const emit = defineEmits<{
           {{ item.key }}
         </td>
         <td class="w-full max-w-[300px] truncate">
-          <x-string
-            class="block text-[#008000]"
-            v-if="typeof item.value === 'string'"
-          >
-            "{{ item.value }}"
-          </x-string>
-          <x-number
-            class="block text-[#800000]"
-            v-else-if="typeof item.value === 'number'"
-          >
-            {{ item.value }}
-          </x-number>
-          <x-boolean v-else-if="typeof item.value === 'boolean'">
-            {{ item.value }}
-          </x-boolean>
-          <x-object v-else>
-            {{ item.value }}
-          </x-object>
+          <!-- 对于localStorage和sessionStorage -->
+          <template v-if="storageType === 'window'">
+            <span class="text-black">{{ item.value }}</span>
+          </template>
+
+          <!-- 对于Chrome的storage -->
+          <template v-else>
+            <x-string
+              class="block text-[#008000]"
+              v-if="typeof item.value === 'string'"
+            >
+              "{{ item.value }}"
+            </x-string>
+            <x-number
+              class="block text-[#800000]"
+              v-else-if="typeof item.value === 'number'"
+            >
+              {{ item.value }}
+            </x-number>
+            <x-boolean v-else-if="typeof item.value === 'boolean'">
+              {{ item.value }}
+            </x-boolean>
+            <x-object v-else>
+              {{ item.value }}
+            </x-object>
+          </template>
         </td>
         <td class="p-2">
           <div class="flex gap-2">

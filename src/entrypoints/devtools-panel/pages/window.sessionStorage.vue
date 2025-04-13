@@ -162,6 +162,7 @@ const saveNewItem = (item: StorageItem) => {
       :items="sessionStorageItems"
       @edit="openEdit"
       @delete="deleteItem"
+      storage-type="window"
     />
   </div>
 </template>
