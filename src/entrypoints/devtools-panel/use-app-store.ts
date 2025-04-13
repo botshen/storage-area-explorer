@@ -11,7 +11,7 @@ declare global {
 export interface StorageItem {
   id: number;
   key: string;
-  value: string;
+  value: string | number | boolean | undefined;
 }
 
 // 存储类型的枚举
@@ -112,10 +112,7 @@ const setChromeStorageData = (data: any, type: string) => {
       ([key, value], index) => ({
         id: index + 1,
         key,
-        value:
-          typeof value === "object"
-            ? JSON.stringify(value, null, 2)
-            : String(value),
+        value: value as string | number | boolean | undefined,
       }),
     );
     chromeLocalStorageItems.value = storageItems;

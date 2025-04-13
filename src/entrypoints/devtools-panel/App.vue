@@ -356,7 +356,7 @@ onMessage("sendToDevPanel", (data) => {
 
 <template>
   <div class="h-full flex flex-col">
-    <div role="tablist" class="tabs tabs-lift m-2">
+    <div role="tablist" class="tabs tabs-box m-2">
       <a
         v-for="tab in tabs"
         :key="tab"
@@ -369,7 +369,7 @@ onMessage("sendToDevPanel", (data) => {
       </a>
     </div>
     <!-- Tab 内容区域 -->
-    <div class="pl-2 flex-1">
+    <div class="px-2 flex-1">
       <div v-if="currentTab === 'chrome.storage.local'">
         <!-- chrome.storage.local 的具体内容 -->
         <div class="flex flex-col h-full">

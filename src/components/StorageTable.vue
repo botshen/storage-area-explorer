@@ -12,7 +12,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <table class="w-full text-xs border-separate border-spacing-0">
+  <table class="w-full text-xs table-zebra my-2">
     <thead>
       <tr class="bg-gray-100">
         <th class="p-2 text-left font-bold text-gray-700">Key</th>
@@ -26,9 +26,26 @@ const emit = defineEmits<{
         :key="item.id"
         class="border-t border-gray-200 hover:bg-gray-50"
       >
-        <td class="p-2 font-medium">{{ item.key }}</td>
-        <td :title="item.value" class="p-2 w-full max-w-[300px] truncate">
-          {{ item.value }}
+        <td class="pl-2">{{ item.key }}</td>
+        <td class="w-full max-w-[300px] truncate">
+          <x-string
+            class="block text-[#008000]"
+            v-if="typeof item.value === 'string'"
+          >
+            "{{ item.value }}"
+          </x-string>
+          <x-number
+            class="block text-[#800000]"
+            v-else-if="typeof item.value === 'number'"
+          >
+            {{ item.value }}
+          </x-number>
+          <x-boolean v-else-if="typeof item.value === 'boolean'">
+            {{ item.value }}
+          </x-boolean>
+          <x-object v-else>
+            {{ item.value }}
+          </x-object>
         </td>
         <td class="p-2">
           <div class="flex gap-2">
