@@ -15,7 +15,9 @@ const emit = defineEmits<{
   <table class="w-full text-xs table-zebra my-2">
     <thead>
       <tr class="bg-gray-100">
-        <th class="p-2 text-left font-bold text-gray-700">Key</th>
+        <th class="p-2 text-left font-bold text-gray-700 whitespace-nowrap">
+          Key
+        </th>
         <th class="p-2 text-left font-bold text-gray-700">Value</th>
         <th class="p-2 text-left font-bold text-gray-700 w-20">Actions</th>
       </tr>
@@ -26,7 +28,9 @@ const emit = defineEmits<{
         :key="item.id"
         class="border-t border-gray-200 hover:bg-gray-50"
       >
-        <td class="pl-2">{{ item.key }}</td>
+        <td class="px-2 whitespace-nowrap font-bold text-black">
+          {{ item.key }}
+        </td>
         <td class="w-full max-w-[300px] truncate">
           <x-string
             class="block text-[#008000]"
