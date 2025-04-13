@@ -3,8 +3,7 @@ import { ref } from "vue";
 import { useAppStore, type StorageItem } from "../use-app-store";
 import StorageActions from "../../../components/StorageActions.vue";
 import StorageTable from "../../../components/StorageTable.vue";
-import StorageEditForm from "../../../components/StorageEditForm.vue";
-import StorageAddForm from "../../../components/StorageAddForm.vue";
+import StorageForm from "../../../components/StorageForm.vue";
 
 const store = useAppStore();
 const { sessionStorageItems, getSessionStorage } = store;
@@ -146,11 +145,17 @@ const saveNewItem = (item: StorageItem) => {
     <StorageActions @add="addItem" @clear="clearStorage" />
 
     <!-- 添加界面 -->
-    <StorageAddForm v-if="isAdding" @save="saveNewItem" @cancel="cancelAdd" />
+    <StorageForm
+      v-if="isAdding"
+      mode="add"
+      @save="saveNewItem"
+      @cancel="cancelAdd"
+    />
 
     <!-- 编辑界面 -->
-    <StorageEditForm
+    <StorageForm
       v-else-if="isEditing"
+      mode="edit"
       v-model:item="editingItem"
       @save="saveEdit"
       @cancel="cancelEdit"
