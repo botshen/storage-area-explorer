@@ -6,7 +6,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
+  <div class="flex items-center gap-1 mb-2">
     <button
       class="btn btn-xs bg-[#3d7fbf] text-white border-none"
       @click="emit('add')"

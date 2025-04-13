@@ -103,12 +103,12 @@ const getSessionStorage = () => {
 };
 
 // 设置 Chrome Storage 数据
-const setChromeStorageData = (data: any) => {
+const setChromeStorageData = (data: any, type: string) => {
   if (!data) return;
-
+  console.log("dat=====a", data);
   // 处理 chrome.storage.local 数据
-  if (data.local) {
-    const storageItems: StorageItem[] = Object.entries(data.local).map(
+  if (type === "local") {
+    const storageItems: StorageItem[] = Object.entries(data).map(
       ([key, value], index) => ({
         id: index + 1,
         key,
@@ -122,8 +122,8 @@ const setChromeStorageData = (data: any) => {
   }
 
   // 处理 chrome.storage.session 数据
-  if (data.sync) {
-    const storageItems: StorageItem[] = Object.entries(data.sync).map(
+  if (type === "sync") {
+    const storageItems: StorageItem[] = Object.entries(data).map(
       ([key, value], index) => ({
         id: index + 1,
         key,

@@ -6,6 +6,7 @@ import {
   onUnmounted,
   ref,
   getCurrentInstance,
+  toRaw,
 } from "vue";
 import { useAppStore, type StorageItem } from "./use-app-store";
 import StorageActions from "../../components/StorageActions.vue";
@@ -72,7 +73,10 @@ watch(currentTab, (newTab) => {
     getSessionStorage();
   }
   if (newTab === "chrome.storage.local") {
-    getChromeLocalStorage();
+    doChromeStorage("getLocalStorage");
+  }
+  if (newTab === "chrome.storage.sync") {
+    doChromeStorage("getSyncStorage");
   }
 });
 
@@ -249,48 +253,7 @@ const addItem = () => {
 const cancelAdd = () => {
   isAdding.value = false;
 };
-
-const saveNewItem = (item: StorageItem) => {
-  if (
-    currentTab.value === "chrome.storage.local" ||
-    currentTab.value === "chrome.storage.session"
-  ) {
-    showAlert("注意：Chrome Storage 目前仅支持查看，不支持编辑和删除操作");
-    isAdding.value = false;
-    return;
-  }
-
-  // 根据当前标签页类型保存到对应的存储
-  chrome.devtools.inspectedWindow.eval(
-    `
-    (function() {
-      try {
-        if (${currentTab.value === "window.localStorage"}) {
-          localStorage.setItem('${item.key}', '${item.value.replace(/'/g, "\\'")}');
-          return true;
-        } else if (${currentTab.value === "window.sessionStorage"}) {
-          sessionStorage.setItem('${item.key}', '${item.value.replace(/'/g, "\\'")}');
-          return true;
-        }
-        return false;
-      } catch (e) {
-        console.error('保存失败:', e);
-        return false;
-      }
-    })()
-    `,
-    (result, isException) => {
-      if (isException || !result) {
-        console.error("保存失败:", isException);
-      } else {
-        // 保存成功 - 监控会自动捕获变更
-        isAdding.value = false;
-      }
-    },
-  );
-};
-
-const getChromeLocalStorage = async () => {
+const doChromeStorage = async (type: string, data?: any) => {
   try {
     // 获取扩展的URL
     const extensionURL = chrome.runtime.getURL("");
@@ -316,11 +279,22 @@ const getChromeLocalStorage = async () => {
 
         try {
           const injectionService = new InjectionService();
+          console.log("type", type);
+          console.log("data", data);
+          const xx = toRaw(data);
+          let _data = "";
+          if (xx) {
+            _data = JSON.stringify(xx);
+          }
+          console.log("_data", _data);
+          const params = {
+            EXTENSION_DETAIL_TYPE: `'${type}'`,
+            EXTENSION_DETAIL_DATA: `'${_data}'`,
+            EXTENSION_ID_PLACEHOLDER: `'${extensionId}'`,
+          };
           await injectionService.evalInInspectedWindow(
             storageHookScript.toString(),
-            {
-              EXTENSION_ID_PLACEHOLDER: `'${extensionId}'`,
-            },
+            params,
           );
           console.log("注入脚本成功执行");
         } catch (error) {
@@ -334,12 +308,48 @@ const getChromeLocalStorage = async () => {
     showAlert("获取chrome.storage.local失败，请查看控制台了解详情");
   }
 };
+const saveNewItem = (item: StorageItem) => {
+  console.log("currentTab.value", currentTab.value);
+  if (currentTab.value === "chrome.storage.local") {
+    doChromeStorage("setLocalStorage", item);
+  } else if (currentTab.value === "chrome.storage.sync") {
+    doChromeStorage("setSyncStorage", item);
+  } else {
+    chrome.devtools.inspectedWindow.eval(
+      `
+    (function() {
+      try {
+        if (${currentTab.value === "window.localStorage"}) {
+          localStorage.setItem('${item.key}', '${item.value.replace(/'/g, "\\'")}');
+          return true;
+        } else if (${currentTab.value === "window.sessionStorage"}) {
+          sessionStorage.setItem('${item.key}', '${item.value.replace(/'/g, "\\'")}');
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('保存失败:', e);
+        return false;
+      }
+    })()
+    `,
+      (result, isException) => {
+        if (isException || !result) {
+          console.error("保存失败:", isException);
+        } else {
+          // 保存成功 - 监控会自动捕获变更
+          isAdding.value = false;
+        }
+      },
+    );
+  }
+};
 
 // 监听从内容脚本发来的消息
 onMessage("sendToDevPanel", (data) => {
   console.log("收到数据:", data.data.detail);
   if (data.data.detail) {
-    setChromeStorageData(data.data.detail);
+    setChromeStorageData(data.data.detail, data.data.type);
   }
 });
 </script>
@@ -363,17 +373,24 @@ onMessage("sendToDevPanel", (data) => {
       <div v-if="currentTab === 'chrome.storage.local'">
         <!-- chrome.storage.local 的具体内容 -->
         <div class="flex flex-col h-full">
-          <div class="flex justify-between items-center">
-            <button
-              class="btn btn-sm bg-[#3d7fbf] text-white border-none"
-              @click="getChromeLocalStorage"
-            >
-              刷新数据
-            </button>
-          </div>
+          <StorageActions @add="addItem" @clear="clearStorage" />
+          <!-- 添加界面 -->
+          <StorageAddForm
+            v-if="isAdding"
+            @save="saveNewItem"
+            @cancel="cancelAdd"
+          />
 
+          <!-- 编辑界面 -->
+          <StorageEditForm
+            v-else-if="isEditing"
+            v-model:item="editingItem"
+            @save="saveEdit"
+            @cancel="cancelEdit"
+          />
           <!-- 表格界面 -->
           <StorageTable
+            v-else
             :items="chromeLocalStorageItems"
             @edit="() => showAlert('Chrome Storage 目前仅支持查看')"
             @delete="() => showAlert('Chrome Storage 目前仅支持查看')"
@@ -383,14 +400,7 @@ onMessage("sendToDevPanel", (data) => {
 
       <div v-else-if="currentTab === 'chrome.storage.session'">
         <div class="flex flex-col h-full">
-          <div class="flex justify-between items-center">
-            <button
-              class="btn btn-sm bg-[#3d7fbf] text-white border-none"
-              @click="getChromeLocalStorage"
-            >
-              刷新数据
-            </button>
-          </div>
+          <StorageActions @add="addItem" @clear="clearStorage" />
 
           <!-- 表格界面 -->
           <StorageTable
