@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from "vue";
+import { ref, toRaw } from "vue";
 import { useAppStore, type StorageItem } from "../use-app-store";
 import StorageActions from "../../../components/StorageActions.vue";
 import StorageTable from "../../../components/StorageTable.vue";
@@ -21,7 +21,9 @@ const isEditing = ref(false);
 const isAdding = ref(false);
 
 const handleEdit = (item: StorageItem) => {
-  editingItem.value = { ...item };
+  const xx = toRaw(item);
+  console.log("xx", xx);
+  editingItem.value = xx;
   isEditing.value = true;
 };
 

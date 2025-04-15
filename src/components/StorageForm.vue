@@ -45,6 +45,19 @@ const updateItem = (key: keyof StorageItem, value: string) => {
   }
 };
 
+// 添加一个计算属性来格式化 value
+const formattedValue = computed(() => {
+  const value = isEditMode.value ? props.item?.value : localItem.value.value;
+  try {
+    // 如果是 JSON 字符串，解析后再格式化
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    // 如果解析失败，直接返回原值
+    return value;
+  }
+});
+
 const save = () => {
   if (isEditMode.value && props.item) {
     emit("save", props.item);
@@ -64,7 +77,7 @@ const save = () => {
 </script>
 
 <template>
-  <div class="mt-4 px-1 pr-4">
+  <div class="mt-4 px-1 pr-4 h-full flex flex-col gap-2 pb-4">
     <div class="form-control w-full">
       <label class="label">
         <span class="label-text">Key</span>
@@ -79,13 +92,13 @@ const save = () => {
         placeholder="Enter key"
       />
     </div>
-    <div class="form-control w-full mt-4">
+    <div class="form-control w-full flex-1">
       <label class="label">
         <span class="label-text">Value</span>
       </label>
       <textarea
-        class="textarea textarea-bordered w-full h-32"
-        :value="isEditMode ? item?.value : localItem.value"
+        class="textarea textarea-bordered w-full h-full"
+        :value="formattedValue"
         @input="
           (e: Event) =>
             updateItem('value', (e.target as HTMLTextAreaElement).value)
