@@ -19,7 +19,7 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
   // @ts-ignore
   const storageData = EXTENSION_DETAIL_DATA;
   // @ts-ignore
-  let data = {};
+  let data: { key?: string; value?: unknown } = {};
 
   if (storageData !== "undefined") {
     data = tryParseJson(storageData, {});
@@ -57,7 +57,7 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
       // 获取当前存储的数据
       const currentData = await getLocalStorage();
       // 只更新指定的键值对
-      if ("key" in data && "value" in data) {
+      if ("key" in data && "value" in data && data.key) {
         currentData[data.key] = data.value;
         chrome.storage.local.set(currentData);
       }
@@ -68,7 +68,7 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
       // 获取当前存储的数据
       const syncData = await getSyncStorage();
       // 只更新指定的键值对
-      if ("key" in data && "value" in data) {
+      if ("key" in data && "value" in data && data.key) {
         syncData[data.key] = data.value;
         chrome.storage.sync.set(syncData);
       }
@@ -82,6 +82,30 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
     getSyncStorage: async () => {
       const syncData = await getSyncStorage();
       sendMessage(syncData, "sync");
+    },
+    removeLocalStorage: async () => {
+      if ("key" in data && data.key) {
+        await chrome.storage.local.remove(data.key);
+      }
+      const updatedLocalData = await getLocalStorage();
+      sendMessage(updatedLocalData, "local");
+    },
+    removeSyncStorage: async () => {
+      if ("key" in data && data.key) {
+        await chrome.storage.sync.remove(data.key);
+      }
+      const updatedSyncData = await getSyncStorage();
+      sendMessage(updatedSyncData, "sync");
+    },
+    clearLocalStorage: async () => {
+      await chrome.storage.local.clear();
+      const updatedLocalData = await getLocalStorage();
+      sendMessage(updatedLocalData, "local");
+    },
+    clearSyncStorage: async () => {
+      await chrome.storage.sync.clear();
+      const updatedSyncData = await getSyncStorage();
+      sendMessage(updatedSyncData, "sync");
     },
   };
 
