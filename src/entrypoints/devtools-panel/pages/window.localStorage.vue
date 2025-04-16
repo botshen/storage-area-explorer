@@ -29,14 +29,16 @@ const cancelEdit = () => {
 };
 
 const saveEdit = () => {
-  // 保存编辑后的值
   const { key, value } = editingItem.value;
+
+  // 对值进行 JSON 序列化处理，这样可以正确处理所有特殊字符
+  const safeValue = JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        localStorage.setItem('${key}', ${typeof value === "string" ? `'${value.replace(/'/g, "\\'")}'` : value});
+        localStorage.setItem('${key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);
@@ -115,11 +117,13 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
+  const safeValue = JSON.stringify(item.value);
+
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        localStorage.setItem('${item.key}', ${typeof item.value === "string" ? `'${item.value.replace(/'/g, "\\'")}'` : item.value});
+        localStorage.setItem('${item.key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);

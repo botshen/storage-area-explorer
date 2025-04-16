@@ -31,12 +31,13 @@ const cancelEdit = () => {
 const saveEdit = () => {
   // 保存编辑后的值
   const { key, value } = editingItem.value;
+  const safeValue = JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        sessionStorage.setItem('${key}', ${typeof value === "string" ? `'${value.replace(/'/g, "\\'")}'` : value});
+        sessionStorage.setItem('${key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);
@@ -115,11 +116,12 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
+  const safeValue = JSON.stringify(item.value);
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        sessionStorage.setItem('${item.key}', ${typeof item.value === "string" ? `'${item.value.replace(/'/g, "\\'")}'` : item.value});
+        sessionStorage.setItem('${item.key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);
