@@ -31,8 +31,9 @@ const cancelEdit = () => {
 const saveEdit = () => {
   const { key, value } = editingItem.value;
 
-  // 对值进行 JSON 序列化处理，这样可以正确处理所有特殊字符
-  const safeValue = JSON.stringify(value);
+  // 由于 localStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof value === "string" ? `"${value}"` : JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
@@ -117,7 +118,11 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
-  const safeValue = JSON.stringify(item.value);
+  // 由于 localStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof item.value === "string"
+      ? `"${item.value}"`
+      : JSON.stringify(item.value);
 
   chrome.devtools.inspectedWindow.eval(
     `
@@ -152,6 +157,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-if="isAdding"
       mode="add"
+      stringOnly
       @save="saveNewItem"
       @cancel="cancelAdd"
     />
@@ -160,6 +166,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-else-if="isEditing"
       mode="edit"
+      stringOnly
       v-model:item="editingItem"
       @save="saveEdit"
       @cancel="cancelEdit"

@@ -31,7 +31,10 @@ const cancelEdit = () => {
 const saveEdit = () => {
   // 保存编辑后的值
   const { key, value } = editingItem.value;
-  const safeValue = JSON.stringify(value);
+
+  // 由于 sessionStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof value === "string" ? `"${value}"` : JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
@@ -116,7 +119,12 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
-  const safeValue = JSON.stringify(item.value);
+  // 由于 sessionStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof item.value === "string"
+      ? `"${item.value}"`
+      : JSON.stringify(item.value);
+
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
@@ -150,6 +158,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-if="isAdding"
       mode="add"
+      stringOnly
       @save="saveNewItem"
       @cancel="cancelAdd"
     />
@@ -158,6 +167,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-else-if="isEditing"
       mode="edit"
+      stringOnly
       v-model:item="editingItem"
       @save="saveEdit"
       @cancel="cancelEdit"

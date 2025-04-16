@@ -5,6 +5,7 @@ import { ref, computed } from "vue";
 const props = defineProps<{
   mode?: "add" | "edit";
   item?: StorageItem;
+  stringOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -48,6 +49,12 @@ const updateItem = (key: keyof StorageItem, value: string) => {
 // 添加一个计算属性来格式化 value
 const formattedValue = computed(() => {
   const value = isEditMode.value ? props.item?.value : localItem.value.value;
+
+  // 如果是 stringOnly 模式，则直接返回原始值
+  if (props.stringOnly) {
+    return value;
+  }
+
   try {
     // 如果是 JSON 字符串，解析后再格式化
     const parsed = typeof value === "string" ? JSON.parse(value) : value;
@@ -98,7 +105,11 @@ const save = () => {
       </label>
       <textarea
         class="textarea textarea-bordered w-full h-full"
-        :value="formattedValue"
+        :value="
+          typeof formattedValue === 'string'
+            ? formattedValue
+            : String(formattedValue)
+        "
         @input="
           (e: Event) =>
             updateItem('value', (e.target as HTMLTextAreaElement).value)
