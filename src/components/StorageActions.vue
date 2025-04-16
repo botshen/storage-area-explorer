@@ -19,11 +19,11 @@ const emit = defineEmits<{
     >
       Clear
     </button>
-    <button class="btn btn-xs bg-[#71bedc] text-white border-none">
+    <!-- <button class="btn btn-xs bg-[#71bedc] text-white border-none">
       Export
     </button>
     <button class="btn btn-xs bg-[#71bedc] text-white border-none">
       Import
-    </button>
+    </button> -->
   </div>
 </template>
