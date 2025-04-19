@@ -29,14 +29,17 @@ const cancelEdit = () => {
 };
 
 const saveEdit = () => {
-  // 保存编辑后的值
   const { key, value } = editingItem.value;
+
+  // 由于 localStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof value === "string" ? `"${value}"` : JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        localStorage.setItem('${key}', ${typeof value === "string" ? `'${value.replace(/'/g, "\\'")}'` : value});
+        localStorage.setItem('${key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);
@@ -115,11 +118,17 @@ const cancelAdd = () => {
 };
 
 const saveNewItem = (item: StorageItem) => {
+  // 由于 localStorage 只能存储字符串，不需要额外的 JSON.stringify
+  const safeValue =
+    typeof item.value === "string"
+      ? `"${item.value}"`
+      : JSON.stringify(item.value);
+
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        localStorage.setItem('${item.key}', ${typeof item.value === "string" ? `'${item.value.replace(/'/g, "\\'")}'` : item.value});
+        localStorage.setItem('${item.key}', ${safeValue});
         return true;
       } catch (e) {
         console.error('保存失败:', e);
@@ -148,6 +157,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-if="isAdding"
       mode="add"
+      stringOnly
       @save="saveNewItem"
       @cancel="cancelAdd"
     />
@@ -156,6 +166,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-else-if="isEditing"
       mode="edit"
+      stringOnly
       v-model:item="editingItem"
       @save="saveEdit"
       @cancel="cancelEdit"
