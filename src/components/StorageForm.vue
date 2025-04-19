@@ -60,7 +60,8 @@ const formattedValue = computed(() => {
 
 const save = () => {
   if (isEditMode.value && props.item) {
-    emit("save", props.item);
+    console.log("localItem.value", localItem.value);
+    emit("save", localItem.value);
   } else {
     if (!localItem.value.key) {
       return;
