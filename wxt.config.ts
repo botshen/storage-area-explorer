@@ -35,7 +35,7 @@ export default defineConfig({
 
     return {
       default_locale: "en",
-      name: "__MSG_name__",
+      name: "Storage Area Explorer",
       description: "__MSG_description__",
       permissions,
       host_permissions: ["<all_urls>"],
