@@ -31,15 +31,14 @@ const cancelEdit = () => {
 const saveEdit = () => {
   const { key, value } = editingItem.value;
 
-  // 由于 localStorage 只能存储字符串，不需要额外的 JSON.stringify
-  const safeValue =
-    typeof value === "string" ? `"${value}"` : JSON.stringify(value);
+  // 修复字符串处理逻辑
+  const safeValue = typeof value === "string" ? value : JSON.stringify(value);
 
   chrome.devtools.inspectedWindow.eval(
     `
     (function() {
       try {
-        localStorage.setItem('${key}', ${safeValue});
+        localStorage.setItem('${key}', '${safeValue}');
         return true;
       } catch (e) {
         console.error('保存失败:', e);
