@@ -117,6 +117,7 @@ const save = () => {
         "
         placeholder="Enter value"
       ></textarea>
+      <JsonEdit v-if="!stringOnly" />
     </div>
     <div class="mt-4 flex gap-2">
       <button class="btn btn-sm" @click="emit('cancel')">取消</button>
