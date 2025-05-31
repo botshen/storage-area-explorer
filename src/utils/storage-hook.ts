@@ -58,8 +58,11 @@ export const storageHookScript = async function (chrome: typeof window.chrome) {
       const currentData = await getLocalStorage();
       // 只更新指定的键值对
       if ("key" in data && "value" in data && data.key) {
-        currentData[data.key] = data.value;
-        chrome.storage.local.set(currentData);
+        // 创建一个新的对象来设置值
+        const updateData = {
+          [data.key]: data.value,
+        };
+        await chrome.storage.local.set(updateData);
       }
       const updatedLocalData = await getLocalStorage();
       sendMessage(updatedLocalData, "local");

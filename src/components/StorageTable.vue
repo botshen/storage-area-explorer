@@ -40,24 +40,27 @@ const emit = defineEmits<{
 
           <!-- 对于Chrome的storage -->
           <template v-else>
-            <x-string
+            <div
               class="block text-[#008000]"
               v-if="typeof item.value === 'string'"
             >
               "{{ item.value }}"
-            </x-string>
-            <x-number
+            </div>
+            <div
               class="block text-[#800000]"
               v-else-if="typeof item.value === 'number'"
             >
               {{ item.value }}
-            </x-number>
-            <x-boolean v-else-if="typeof item.value === 'boolean'">
+            </div>
+            <div
+              class="block text-[#800000]"
+              v-else-if="typeof item.value === 'boolean'"
+            >
               {{ item.value }}
-            </x-boolean>
-            <x-object v-else>
+            </div>
+            <div class="block text-[#800000]" v-else>
               {{ item.value }}
-            </x-object>
+            </div>
           </template>
         </td>
         <td class="p-2">

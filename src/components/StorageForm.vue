@@ -34,7 +34,7 @@ if (isEditMode.value && props.item) {
 }
 
 // 更新编辑模式下的item
-const updateItem = (key: keyof StorageItem, value: string) => {
+const updateItem = (key: keyof StorageItem, value: any) => {
   if (isEditMode.value) {
     emit("update:item", {
       ...props.item!,
@@ -48,17 +48,13 @@ const updateItem = (key: keyof StorageItem, value: string) => {
   }
 };
 
-// 处理JSON编辑器确认事件
-const handleJsonConfirm = (value: any) => {
-  console.log("value", value);
-  // 将格式化后的JSON值更新到item中
-  // updateItem('value', typeof value === 'string' ? value : JSON.stringify(value));
-};
+// 处理JSON编辑器确认事件（已移除，现在直接通过v-model处理）
 
 // 添加一个计算属性来格式化 value
 const formattedValue = computed(() => {
   const value = isEditMode.value ? props.item?.value : localItem.value.value;
-  console.log("value", value);
+  console.log(" typeof value=== ", typeof value);
+  console.log("value2", value);
   // 如果是 stringOnly 模式，则直接返回原始值
   if (props.stringOnly) {
     return value;
@@ -70,8 +66,13 @@ const formattedValue = computed(() => {
 
 const save = () => {
   if (isEditMode.value && props.item) {
-    console.log("localItem.value", localItem.value);
-    emit("save", localItem.value);
+    // 编辑模式下，使用当前编辑的item数据
+    const itemToSave = {
+      ...props.item,
+      key: isEditMode.value ? props.item.key : localItem.value.key,
+      value: isEditMode.value ? props.item.value : localItem.value.value,
+    };
+    emit("save", itemToSave);
   } else {
     if (!localItem.value.key) {
       return;
@@ -112,7 +113,6 @@ const save = () => {
         v-if="type === 'extension'"
         :value="formattedValue"
         @update:value="updateItem('value', $event)"
-        @confirm="handleJsonConfirm"
       />
       <textarea
         v-else

@@ -31,9 +31,9 @@ const cancelEdit = () => {
   isEditing.value = false;
 };
 
-const saveEdit = () => {
+const saveEdit = (item: StorageItem) => {
   // 调用保存chrome存储的方法
-  doChromeStorage("setLocalStorage", editingItem.value);
+  doChromeStorage("setLocalStorage", item);
   isEditing.value = false;
 };
 
