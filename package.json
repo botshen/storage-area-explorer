@@ -2,7 +2,7 @@
   "name": "storage-explorer",
   "private": true,
   "version": "0.0.1",
-  "packageManager": "bun@1.2.1",
+  "packageManager": "pnpm@9.5.0",
   "type": "module",
   "scripts": {
     "check": "check",
@@ -32,7 +32,7 @@
     "@aklinker1/generate-changelog": "^1.1.2",
     "@iconify/json": "^2.2.261",
     "@tailwindcss/vite": "^4.0.6",
-    "@types/bun": "^1.1.11",
+    "@types/node": "^20.11.30",
     "@types/chrome": "^0.0.278",
     "@types/jsdom": "^21.1.7",
     "@vitest/coverage-v8": "^2.1.3",
@@ -56,7 +56,7 @@
     "wxt": "^0.19.11"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun lint-staged"
+    "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
     "*": "prettier --ignore-unknown --write"
