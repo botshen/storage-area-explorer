@@ -1,11 +1,13 @@
 <script lang="ts" setup>
 import type { StorageItem } from "../entrypoints/devtools-panel/use-app-store";
 import { ref, computed } from "vue";
+import JsonEdit from "./JsonEdit.vue";
 
 const props = defineProps<{
   mode?: "add" | "edit";
   item?: StorageItem;
   stringOnly?: boolean;
+  type?: "window" | "extension";
 }>();
 
 const emit = defineEmits<{
@@ -46,23 +48,24 @@ const updateItem = (key: keyof StorageItem, value: string) => {
   }
 };
 
+// 处理JSON编辑器确认事件
+const handleJsonConfirm = (value: any) => {
+  console.log("value", value);
+  // 将格式化后的JSON值更新到item中
+  // updateItem('value', typeof value === 'string' ? value : JSON.stringify(value));
+};
+
 // 添加一个计算属性来格式化 value
 const formattedValue = computed(() => {
   const value = isEditMode.value ? props.item?.value : localItem.value.value;
-
+  console.log("value", value);
   // 如果是 stringOnly 模式，则直接返回原始值
   if (props.stringOnly) {
     return value;
   }
 
-  try {
-    // 如果是 JSON 字符串，解析后再格式化
-    const parsed = typeof value === "string" ? JSON.parse(value) : value;
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    // 如果解析失败，直接返回原值
-    return value;
-  }
+  // 直接返回原始值，不再进行格式化
+  return value;
 });
 
 const save = () => {
@@ -104,7 +107,15 @@ const save = () => {
       <label class="label">
         <span class="label-text">Value</span>
       </label>
+
+      <JsonEdit
+        v-if="type === 'extension'"
+        :value="formattedValue"
+        @update:value="updateItem('value', $event)"
+        @confirm="handleJsonConfirm"
+      />
       <textarea
+        v-else
         class="textarea textarea-bordered w-full h-full"
         :value="
           typeof formattedValue === 'string'
@@ -117,7 +128,6 @@ const save = () => {
         "
         placeholder="Enter value"
       ></textarea>
-      <JsonEdit v-if="!stringOnly" />
     </div>
     <div class="mt-4 flex gap-2">
       <button class="btn btn-sm" @click="emit('cancel')">取消</button>

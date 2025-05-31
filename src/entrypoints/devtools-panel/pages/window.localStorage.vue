@@ -157,6 +157,7 @@ const saveNewItem = (item: StorageItem) => {
       v-if="isAdding"
       mode="add"
       stringOnly
+      type="window"
       @save="saveNewItem"
       @cancel="cancelAdd"
     />
@@ -166,6 +167,7 @@ const saveNewItem = (item: StorageItem) => {
       v-else-if="isEditing"
       mode="edit"
       stringOnly
+      type="window"
       v-model:item="editingItem"
       @save="saveEdit"
       @cancel="cancelEdit"

@@ -67,6 +67,7 @@ const saveNewItem = (item: StorageItem) => {
     <StorageForm
       v-if="isAdding"
       mode="add"
+      type="extension"
       @save="saveNewItem"
       @cancel="cancelAdd"
     />
@@ -74,6 +75,7 @@ const saveNewItem = (item: StorageItem) => {
     <!-- 编辑界面 -->
     <StorageForm
       v-else-if="isEditing"
+      type="extension"
       mode="edit"
       v-model:item="editingItem"
       @save="saveEdit"
