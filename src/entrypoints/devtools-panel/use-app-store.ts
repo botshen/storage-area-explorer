@@ -118,16 +118,13 @@ const setChromeStorageData = (data: any, type: string) => {
     chromeLocalStorageItems.value = storageItems;
   }
 
-  // 处理 chrome.storage.session 数据
+  // 处理 chrome.storage.sync 数据
   if (type === "sync") {
     const storageItems: StorageItem[] = Object.entries(data).map(
       ([key, value], index) => ({
         id: index + 1,
         key,
-        value:
-          typeof value === "object"
-            ? JSON.stringify(value, null, 2)
-            : String(value),
+        value: value as string | number | boolean | undefined,
       }),
     );
     chromeSessionStorageItems.value = storageItems;
