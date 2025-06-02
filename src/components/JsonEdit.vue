@@ -19,6 +19,9 @@ const processValue = (text: string) => {
   if (forceType.value === "string") {
     return text;
   } else if (forceType.value === "number") {
+    if (text.trim() === "") {
+      return text;
+    }
     const num = Number(text);
     return isNaN(num) ? text : num;
   } else {
